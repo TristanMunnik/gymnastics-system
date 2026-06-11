@@ -1,0 +1,60 @@
+# Gymnastics system
+
+This is my web-based system that is built to register and manage gymnasts and is built using PHP, MySQL, JS, React and Node.JS
+
+## Setup
+
+1. have ampps running
+2. open phpMyAdmin, import the gymnastics_db.sql
+3. open http://localhost/gymnastics/php/index.php
+
+## login credentials
+
+for admin
+
+- Email: admin@gym.com
+- Password: admin123 
+
+for gymnast the login is set by the admin during registration
+
+## user roles
+
+Admin:
+
+- Register new gymnasts
+- view the gymnasts in a table
+- be able to search or filter gymnasts
+- view the individual profiles of the gymnasts
+- edit or delete the gymnasts information
+
+Gymnast:
+
+- view their profile
+- download or print their summary report and their enrollment confirmation slip
+
+## technologies used
+
+- PHP
+- MySQL
+- HTML
+- css
+- Javascript
+- React
+- Node.js
+- mysql2
+
+## security choices
+
+- passwords are hashed
+- database queries use PDO prepared statements
+- output uses htmlspecialchars
+- role-based access control
+- input validation
+
+## how to generate report
+
+Log in as a gymnast and use the navbar to access the
+
+- profile summary report which shows all the person details that can be printed
+- enrollment confirmation slip to show registration details and status
+

@@ -17,8 +17,8 @@
 
     if($_SERVER['REQUEST_METHOD'] === 'POST'){
 
-        $email = trim($_POST['email']);
-        $password = $_POST['password'];
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
 
         if(empty($email) || empty($password)) {
             $error = "Please fill in all fields"; 
@@ -29,6 +29,7 @@
             $user = $stmt->fetch();
 
             if($user && password_verify($password, $user['password'])) {
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['role'] = $user['role'];
@@ -53,42 +54,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gymnastics Academy - Login</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/login.css">
 </head>
-<body>
+<body class="login-page">
 
-<div class="page-center">
-    <div class="card" style="width: 100%; max-width: 420px;">
-
-        <div>
-            <div style="font-size: 2.5rem;"></div>
-            <h1>Gymnastics Academy</h1>
-            <p class="text-muted">Sign in to your account</p>
+<main class="login-layout">
+    <section class="login-card">
+        <a class="login-brand" href="index.php" aria-label="Gymnastics Academy home">
+            <span class="login-brand-mark" aria-hidden="true">G</span>
+            <span>Gymnastics Academy</span>
+        </a>
+        <div class="login-heading">
+            <p class="login-eyebrow">WELCOME BACK</p>
+            <h1>Sign in to your account</h1>
+            <p>Manage your membership and training details.</p>
         </div>
-
         <?php if ($error): ?>
-            <div class="alert alert-error"><?php echo $error; ?></div>
+            <div class="alert alert-error" role="alert"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <form method="POST">
-
+        <form method="POST" class="login-form">
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" placeholder="example@gmail.com" required>
+                <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="username" required>
             </div>
-
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required>
+                <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
-                Sign In
-            </button>
-
+            <button type="submit" class="login-submit">Sign in <span aria-hidden="true">→</span></button>
         </form>
-
-    </div>
-</div>
+        <p class="login-footer">Gymnastics Academy <span>·</span> Member portal</p>
+    </section>
+    <aside class="login-aside" aria-label="Academy welcome">
+        <div class="aside-decoration aside-decoration-one"></div>
+        <div class="aside-decoration aside-decoration-two"></div>
+        <div class="aside-content">
+            <span class="aside-label">MOVE WITH PURPOSE</span>
+            <span class="aside-glyph" aria-hidden="true">G</span>
+            <h2>Strength, focus,<br>and a little more lift.</h2>
+            <p>Your training journey, all in one place.</p>
+        </div>
+        <span class="aside-caption">GYMNASTICS ACADEMY <span>—</span> EST. 2024</span>
+    </aside>
+</main>
 
 </body>
 </html>

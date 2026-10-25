@@ -70,15 +70,33 @@ tbody tr:hover { background: #fbfdfc; }
 .member-cell strong { color: #2b3b38; font-size: 12px; font-weight: 700; }
 .member-cell small { margin-top: 3px; color: #879490; font-size: 10px; }
 .member-container { max-width: 1000px; }
-.member-profile, .printable-document { padding-bottom: 24px; }
-.profile-list { padding: 12px 24px; }
-.profile-row { min-height: 48px; align-items: center; }
-.profile-label { width: 190px; }
-.member-actions { padding: 0 24px; display: flex; flex-wrap: wrap; gap: 10px; }
-.document-heading { padding: 36px 30px 20px; text-align: center; }
+.member-page { min-height: calc(100vh - 72px); padding-top: 54px; padding-bottom: 72px; }
+.member-navbar .navbar-links { gap: 10px; }
+.member-nav-link { padding: 10px 12px; border-radius: 7px; color: #687873; transition: color .15s, background .15s; }
+.member-nav-link:hover, .member-nav-link.active { color: var(--green); background: #edf6f3; }
+.member-nav-link.active { font-weight: 700; }
+.profile-panel, .document-card { overflow: hidden; border-color: #e1ebe7; border-radius: 16px; box-shadow: 0 12px 36px rgb(31 67 59 / 6%); }
+.profile-panel { padding-bottom: 25px; }
+.profile-panel .panel-heading { min-height: 82px; padding: 22px 28px; }
+.profile-panel .panel-heading h2 { font-size: 17px; }
+.profile-list { padding: 21px 28px 25px; }
+.profile-row { min-height: 67px; padding: 12px 15px; display: grid; grid-template-columns: minmax(140px, .8fr) minmax(0, 1.2fr); align-items: center; gap: 18px; border-bottom: 1px solid #edf2f0; }
+.profile-row:last-child { border-bottom: 0; }
+.profile-label { color: #7a8985; font-size: 12px; font-weight: 600; }
+.profile-value { color: #233934; font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
+.member-actions { padding: 0 43px; display: flex; flex-wrap: wrap; gap: 10px; }
+.member-actions .btn { min-height: 44px; padding: 0 19px; }
+.document-card { max-width: 790px; margin: 6px auto; padding-bottom: 27px; }
+.document-heading { position: relative; padding: 43px 30px 29px; text-align: center; background: linear-gradient(145deg, #f0f8f5, #fbfdfc 72%); border-bottom: 1px solid #e9f0ed; }
 .document-heading h1 { font-size: clamp(24px, 4vw, 32px); }
-.document-heading > p:last-child { color: var(--muted); font-size: 13px; }
-.document-heading .eyebrow { margin-bottom: 10px; }
+.document-heading > p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.document-heading .eyebrow { margin-bottom: 12px; }
+.document-report .document-heading { border-top: 4px solid var(--green); }
+.document-slip .document-heading { border-top: 4px solid #79a849; background: linear-gradient(145deg, #f4f8eb, #fbfdf9 72%); }
+.document-slip .document-heading .eyebrow { color: #64883b; }
+.document-card .profile-list { padding: 23px 35px; }
+.document-card .profile-row { min-height: 58px; }
+.document-card .member-actions { padding: 0 35px; }
 .avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--green); background: #e7f3f0; font-size: 12px; font-weight: 700; }
 .badge { display: inline-flex; padding: 5px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; }
 .badge-active { color: #27764c; background: #e9f7ee; }
@@ -123,9 +141,24 @@ tbody tr:hover { background: #fbfdfc; }
   body { min-width: 320px; }
   .navbar { height: 62px; padding: 0 5%; }
   .navbar-links { gap: 12px; font-size: 11px; }
-  .user-name, .navbar-links a:first-of-type { display: none; }
+  .user-name, .navbar-links a:first-of-type:not(.member-nav-link) { display: none; }
+  .member-navbar { height: auto; min-height: 62px; padding-top: 10px; padding-bottom: 10px; align-items: flex-start; gap: 10px; }
+  .member-navbar .navbar-brand { flex-shrink: 0; font-size: 12px; }
+  .member-navbar .navbar-links { justify-content: flex-end; flex-wrap: wrap; gap: 2px; }
+  .member-navbar .member-nav-link { padding: 8px 7px; font-size: 10px; }
+  .member-navbar .nav-button { padding: 7px; font-size: 10px; }
   .container { width: 92%; padding-top: 27px; }
+  .member-page { padding-top: 34px; padding-bottom: 44px; }
   .welcome-row { align-items: flex-start; flex-direction: column; }
+  .profile-panel .panel-heading { min-height: auto; padding: 19px 18px; }
+  .profile-list { padding: 14px 15px 19px; }
+  .profile-row { min-height: 62px; padding: 11px 8px; grid-template-columns: minmax(100px, .8fr) minmax(0, 1.2fr); gap: 10px; }
+  .profile-label { font-size: 11px; }
+  .profile-value { font-size: 12px; }
+  .member-actions { padding: 0 23px; }
+  .document-heading { padding: 31px 18px 23px; }
+  .document-card .profile-list { padding: 14px 15px 20px; }
+  .document-card .member-actions { padding: 0 22px; }
   .summary-grid { gap: 8px; }
   .summary-card { padding: 14px 10px; display: block; }
   .summary-card strong { display: block; margin: 8px 0 4px; font-size: 23px; }
@@ -140,8 +173,8 @@ tbody tr:hover { background: #fbfdfc; }
   body { min-width: 0; background: #fff; }
   .navbar, .no-print, .member-actions, .page-footer { display: none !important; }
   .container { width: 100%; max-width: none; padding: 0; }
-  .panel { border: 0; box-shadow: none; }
-  .document-heading { padding-top: 10px; }
-  .profile-list { padding: 8px 0; }
-  .profile-row { break-inside: avoid; }
+  .document-card { max-width: 100%; margin: 0; padding: 0; border: 1px solid #d9e2de; border-radius: 0; box-shadow: none; }
+  .document-heading { padding: 22px 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .document-card .profile-list { padding: 14px 22px; }
+  .document-card .profile-row { min-height: 44px; break-inside: avoid; }
 }

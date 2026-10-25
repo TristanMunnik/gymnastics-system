@@ -42,17 +42,17 @@ export default function GymnastPortal({ user, onLogout }) {
 
   return (
     <>
-      <header className="navbar">
+      <header className="navbar member-navbar">
         <a className="navbar-brand" href="?page=profile"><span className="brand-mark">G</span> Gymnastics Academy</a>
         <nav className="navbar-links" aria-label="Member navigation">
           <span className="user-name">{user.full_name}</span>
-          <a href="?page=profile">My profile</a>
-          <a href="?page=report">Profile report</a>
-          <a href="?page=slip">Enrollment slip</a>
+          <a className={`member-nav-link ${page === 'profile' ? 'active' : ''}`} href="?page=profile">My profile</a>
+          <a className={`member-nav-link ${page === 'report' ? 'active' : ''}`} href="?page=report">Profile report</a>
+          <a className={`member-nav-link ${page === 'slip' ? 'active' : ''}`} href="?page=slip">Enrollment slip</a>
           <button className="nav-button" type="button" onClick={onLogout}>Sign out</button>
         </nav>
       </header>
-      <main className="container member-container">
+      <main className="container member-container member-page">
         {error && <p className="alert alert-error" role="alert">{error}</p>}
         {gymnast && page === 'profile' && (
           <>
@@ -60,7 +60,7 @@ export default function GymnastPortal({ user, onLogout }) {
               <div><p className="eyebrow">MEMBER PORTAL</p><h1>My profile</h1><p className="welcome-copy">Your membership and training details.</p></div>
               <StatusBadge status={gymnast.status} />
             </section>
-            <section className="panel member-profile">
+            <section className="panel member-profile profile-panel">
               <div className="panel-heading"><div><h2>Personal details</h2><p>Contact your administrator if any information needs updating.</p></div></div>
               <div className="profile-list"><ProfileRows gymnast={gymnast} fields={profileFields} /></div>
               <div className="member-actions">
@@ -71,9 +71,9 @@ export default function GymnastPortal({ user, onLogout }) {
           </>
         )}
         {gymnast && (page === 'report' || page === 'slip') && (
-          <section className="panel printable-document">
+          <section className={`panel printable-document document-card document-${page}`}>
             <div className="document-heading">
-              <p className="eyebrow">GYMNASTICS ACADEMY</p>
+              <p className="eyebrow">{page === 'report' ? 'MEMBERSHIP RECORD' : 'ENROLLMENT RECORD'}</p>
               <h1>{page === 'report' ? 'Profile summary report' : 'Enrollment confirmation slip'}</h1>
               <p>Prepared for {gymnast.full_name}</p>
             </div>

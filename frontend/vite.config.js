@@ -17,7 +17,11 @@ export default defineConfig(({ mode }) => {
         '/api.php': {
           target: phpAppUrl.origin,
           changeOrigin: true,
-          rewrite: () => `${phpAppUrl.pathname.replace(/\/$/, '')}/api.php`,
+          rewrite: (path) => {
+            const queryIndex = path.indexOf('?');
+            const query = queryIndex === -1 ? '' : path.slice(queryIndex);
+            return `${phpAppUrl.pathname.replace(/\/$/, '')}/api.php${query}`;
+          },
         },
       },
     },

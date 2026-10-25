@@ -1,6 +1,6 @@
 # Gymnastics Academy
 
-A university assignment rebuilt as a portfolio-ready membership management app. The admin dashboard uses React, the PHP application handles login and JSON requests, and MySQL stores users and gymnast memberships.
+A university assignment rebuilt as a portfolio-ready membership management app. React renders the login, administrator dashboard, and gymnast portal; PHP handles authentication and JSON requests; MySQL stores users and gymnast memberships.
 
 ## Features
 
@@ -25,20 +25,59 @@ Node.js is used only to build and serve the React frontend during development. T
 database/
   schema.sql             Database tables and constraints
 frontend/
-  src/                   React dashboard and PHP API client
+  src/
+    components/          Reusable form and status badge
+    pages/               Login, admin dashboard, and gymnast portal
+    css/                 Login, dashboard, and portal styles
+    App.jsx              Restores the session and chooses the screen
+    api.js               Sends requests to the PHP API
+    main.jsx             Starts the React app
   vite.config.js         Vite development proxy and production build
 php/
   api.php                PHP API used by the React dashboard
-  index.php              Login page
-  admin.php              Admin dashboard redirect
-  gymnast.php            Gymnast portal and printable reports
+  index.php              Sends old PHP links to the React app
+  admin.php              Sends old admin links to the React app
+  gymnast.php            Sends old member links to the React app
   config*.php            Database configuration
+  functions.php           Reusable database operations
   create-admin.php       One-time administrator setup
-css/                     Styles for the PHP pages
 storage/                 Deletion log (created when needed)
 ```
 
 This is a small project structure, not a full enterprise framework. The folders separate the main parts of the app; you do not need to add more layers or move files around to keep working on it.
+
+## How the code works
+
+### What happens when you sign in
+
+1. `frontend/src/main.jsx` starts the React application in the page's `root` element and loads its styles.
+2. `frontend/src/App.jsx` asks PHP for the current session. A signed-out visitor sees the React login form; an administrator sees the dashboard; a gymnast sees their member portal.
+3. `frontend/src/api.js` sends browser requests to `php/api.php`. During development, Vite forwards `/api.php` requests to the PHP server on port 8000.
+4. `php/api.php` checks the session, role, and CSRF token where needed. It is the only HTTP entry point that reads or changes app data.
+5. `php/db.php` opens a PDO connection using settings from the ignored `php/config.local.php`. `php/functions.php` contains the shared SQL operations for registering, listing, updating, and deleting gymnast records.
+
+React controls what the user sees, but it does not grant permissions. PHP makes the permission checks before returning private data or changing the database.
+
+### Main React files
+
+- `frontend/src/App.jsx` checks the signed-in user and chooses the login page, admin dashboard, or gymnast portal.
+- `frontend/src/pages/LoginPage.jsx` contains the sign-in form. `AdminDashboard.jsx` handles membership management, and `GymnastPortal.jsx` shows member profiles and printable reports.
+- `frontend/src/components/GymnastForm.jsx` is the shared create/edit form, and `StatusBadge.jsx` displays a membership status.
+- React state (`useState`) holds data and form values; `useEffect` loads data from PHP; `useMemo` recalculates the filtered list when its inputs change.
+- `frontend/src/api.js` is the small HTTP client used by the screens. It sends the PHP session cookie and the CSRF header for changes.
+- `frontend/src/main.jsx` is the browser entry point that mounts React and imports the stylesheets.
+- `frontend/src/css/app.css` styles the dashboard and member portal; `frontend/src/css/login.css` styles the login screen.
+- `frontend/vite.config.js` configures the local React development server and builds the production files.
+
+### Main PHP files
+
+- `php/api.php` provides session, login/logout, gymnast-profile, and admin gymnast endpoints. It validates request data and checks the user's role on the server.
+- `php/config.php` loads local settings or environment variables. `php/config.local.php` contains your machine's database settings and must remain private.
+- `php/db.php` creates the PDO database connection.
+- `php/functions.php` contains reusable queries and transaction-safe database changes.
+- `php/create-admin.php` is a one-time command-line helper to create an administrator; it is not needed to add gymnast accounts.
+- `php/index.php`, `php/admin.php`, and `php/gymnast.php` are compatibility redirects for older links. The actual login and app screens are React.
+- `database/schema.sql` defines the MySQL tables and their relationships.
 
 ## Run locally on Windows with Laragon
 
@@ -116,15 +155,18 @@ The supplied schema reflects the tables and fields used by the application code:
 
 ## API overview
 
-All endpoints require a signed-in administrator session. Mutating requests also require the CSRF token returned by `GET api.php?action=session`.
+The session endpoint is public so the React app can tell whether it should show the login screen. Profile requests require the signed-in gymnast; member-management requests require an administrator. Login, logout, and data-changing requests require the CSRF token returned by `GET api.php?action=session`.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `api.php?action=session` | Current administrator and CSRF token |
-| `GET` | `api.php?action=gymnasts` | List members |
-| `POST` | `api.php?action=gymnasts` | Register a member |
-| `PUT` | `api.php?action=gymnasts&id=<id>` | Update a member |
-| `DELETE` | `api.php?action=gymnasts&id=<id>` | Delete a member |
+| `GET` | `api.php?action=session` | Current signed-in user (if any) and CSRF token |
+| `POST` | `api.php?action=login` | Sign in |
+| `POST` | `api.php?action=logout` | Sign out |
+| `GET` | `api.php?action=profile` | Get the signed-in gymnast's own profile |
+| `GET` | `api.php?action=gymnasts` | Admin: list members |
+| `POST` | `api.php?action=gymnasts` | Admin: register a member |
+| `PUT` | `api.php?action=gymnasts&id=<id>` | Admin: update a member |
+| `DELETE` | `api.php?action=gymnasts&id=<id>` | Admin: delete a member |
 
 ## Security and deployment
 

@@ -1,10 +1,12 @@
 <?php
 session_start();
-session_destroy();
+$_SESSION = [];
 if (ini_get('session.use_cookies')) {
     $cookie = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000, $cookie['path'], $cookie['domain'], $cookie['secure'], $cookie['httponly']);
 }
-header('Location: index.php');
+$config = require __DIR__ . '/config.php';
+session_destroy();
+header('Location: ' . $config['frontend_url']);
 exit;
 ?>

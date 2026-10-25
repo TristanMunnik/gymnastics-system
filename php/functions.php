@@ -8,6 +8,7 @@ define('STATUS_PENDING', 'Pending');
 function registerGymnast($pdo, $data) {
     $hashPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
+    // A member account and its profile are a single logical operation, so save both atomically.
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare("INSERT INTO users (full_name, email, `password`, role) VALUES (?, ?, ?, ?)");

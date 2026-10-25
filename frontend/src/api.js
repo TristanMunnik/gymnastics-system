@@ -1,9 +1,7 @@
 const apiUrl = import.meta.env.DEV ? '/api.php' : '../api.php';
-const loginUrl = import.meta.env.DEV
-  ? `${import.meta.env.VITE_PHP_APP_URL || 'http://localhost/gymnastics/php'}/index.php`
-  : '../index.php';
 
-async function request(action, { csrfToken, headers, ...options } = {}, params = {}) {
+// Keep API calls in one place so credentials, CSRF headers, and error handling stay consistent.
+async function request(action, { csrfToken, headers, redirectOnUnauthorized = true, ...options } = {}, params = {}) {
   const query = new URLSearchParams({ action, ...params });
   const response = await fetch(`${apiUrl}?${query}`, {
     credentials: 'same-origin',
@@ -19,8 +17,11 @@ async function request(action, { csrfToken, headers, ...options } = {}, params =
   const result = await response.json();
 
   if (response.status === 401) {
-    window.location.assign(loginUrl);
-    throw new Error('Your session has expired. Sign in again.');
+    if (redirectOnUnauthorized) {
+      window.location.assign(import.meta.env.DEV ? '/' : '../index.php');
+      throw new Error('Your session has expired. Sign in again.');
+    }
+    throw new Error(result.error || 'Invalid email or password.');
   }
 
   if (!response.ok) {
@@ -32,6 +33,26 @@ async function request(action, { csrfToken, headers, ...options } = {}, params =
 
 export function getSession() {
   return request('session');
+}
+
+export function login(credentials, csrfToken) {
+  return request('login', {
+    method: 'POST',
+    body: JSON.stringify(credentials),
+    csrfToken,
+    redirectOnUnauthorized: false,
+  });
+}
+
+export function logout(csrfToken) {
+  return request('logout', {
+    method: 'POST',
+    csrfToken,
+  });
+}
+
+export function getGymnastProfile() {
+  return request('profile');
 }
 
 export function getGymnasts() {

@@ -1,5 +1,6 @@
 <?php
 
+// Read local-only settings first, then fall back to environment variables for hosted deployments.
 $config = require __DIR__ . '/config.php';
 $dsn = sprintf(
     'mysql:host=%s;dbname=%s;charset=utf8mb4',

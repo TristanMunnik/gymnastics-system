@@ -4,6 +4,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+// All browser requests enter through this JSON API; PHP keeps authentication and database access server-side.
 function respond($data, $status = 200) {
     http_response_code($status);
     echo json_encode($data, JSON_UNESCAPED_SLASHES);
@@ -22,6 +23,24 @@ function readJsonBody() {
     }
 
     return $data;
+}
+
+function requireCsrfToken() {
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        respond(['error' => 'Your session token is invalid. Refresh the page and try again.'], 403);
+    }
+}
+
+function sessionUser() {
+    if (!isset($_SESSION['user_id'])) {
+        return null;
+    }
+
+    return [
+        'full_name' => $_SESSION['full_name'],
+        'role' => $_SESSION['role'],
+    ];
 }
 
 function requiredText($data, $key, $label, $maximumLength, &$errors) {
@@ -83,27 +102,76 @@ function validateGymnast($data, $creating) {
 }
 
 try {
-    if (!isset($_SESSION['user_id'])) {
-        respond(['error' => 'Please sign in to continue.'], 401);
-    }
-    if (($_SESSION['role'] ?? '') !== 'admin') {
-        respond(['error' => 'Administrator access is required.'], 403);
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 
     $action = $_GET['action'] ?? '';
     $method = $_SERVER['REQUEST_METHOD'];
 
+    // Session and login endpoints are public so React can render the right screen before sign-in.
     if ($method === 'GET' && $action === 'session') {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        respond(['user' => sessionUser(), 'csrfToken' => $_SESSION['csrf_token']]);
+    }
+
+    if ($method === 'POST' && $action === 'login') {
+        requireCsrfToken();
+        $credentials = readJsonBody();
+        $email = trim((string) ($credentials['email'] ?? ''));
+        $password = (string) ($credentials['password'] ?? '');
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
+            respond(['error' => 'Enter a valid email and password.'], 422);
         }
-        respond([
-            'user' => [
-                'full_name' => $_SESSION['full_name'],
-                'role' => $_SESSION['role'],
-                'csrfToken' => $_SESSION['csrf_token'],
-            ],
-        ]);
+
+        require_once __DIR__ . '/db.php';
+        $statement = $pdo->prepare('SELECT id, full_name, `password`, role FROM users WHERE email = ?');
+        $statement->execute([$email]);
+        $account = $statement->fetch();
+
+        if (!$account || !password_verify($password, $account['password'])) {
+            respond(['error' => 'Invalid email or password.'], 401);
+        }
+        if (!in_array($account['role'], ['admin', 'gymnast'], true)) {
+            respond(['error' => 'This account does not have an allowed role.'], 403);
+        }
+
+        // Change the session ID after login and rotate the CSRF token with it.
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $account['id'];
+        $_SESSION['full_name'] = $account['full_name'];
+        $_SESSION['role'] = $account['role'];
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        respond(['user' => sessionUser(), 'csrfToken' => $_SESSION['csrf_token']]);
+    }
+
+    if ($method === 'POST' && $action === 'logout') {
+        requireCsrfToken();
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $cookie = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $cookie['path'], $cookie['domain'], $cookie['secure'], $cookie['httponly']);
+        }
+        session_destroy();
+        respond(['loggedOut' => true]);
+    }
+
+    if (!isset($_SESSION['user_id'])) {
+        respond(['error' => 'Please sign in to continue.'], 401);
+    }
+
+    if ($method === 'GET' && $action === 'profile' && $_SESSION['role'] === 'gymnast') {
+        require_once __DIR__ . '/db.php';
+        require_once __DIR__ . '/functions.php';
+        $gymnast = getGymnastByUserId($pdo, $_SESSION['user_id']);
+        if (!$gymnast) {
+            respond(['error' => 'No gymnast profile is linked to this account.'], 404);
+        }
+        respond($gymnast);
+    }
+
+    if (($_SESSION['role'] ?? '') !== 'admin') {
+        respond(['error' => 'Administrator access is required.'], 403);
     }
 
     require_once __DIR__ . '/functions.php';
@@ -120,11 +188,7 @@ try {
         respond(['error' => 'The requested endpoint was not found.'], 404);
     }
 
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        respond(['error' => 'Your session token is invalid. Refresh the page and try again.'], 403);
-    }
-
+    requireCsrfToken();
     require_once __DIR__ . '/db.php';
 
     if ($method === 'DELETE') {

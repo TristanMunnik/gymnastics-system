@@ -5,7 +5,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../php/src/db.php';
 
 $email = trim(getenv('GYMNAST_ADMIN_EMAIL') ?: '');
 $password = getenv('GYMNAST_ADMIN_PASSWORD') ?: '';
@@ -25,7 +25,7 @@ if (strlen($password) < 6) {
 }
 
 try {
-    $statement = $pdo->prepare(
+    $statement = getPdo()->prepare(
         'INSERT INTO users (full_name, email, `password`, role) VALUES (?, ?, ?, ?)'
     );
     $statement->execute([$fullName, $email, password_hash($password, PASSWORD_DEFAULT), 'admin']);

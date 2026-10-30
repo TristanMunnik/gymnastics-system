@@ -3,13 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const phpAppUrl = new URL(env.PHP_APP_URL || 'http://localhost/gymnastics/php');
+  const phpAppUrl = new URL(env.PHP_APP_URL || 'http://localhost/gymnastics/php/public');
 
   return {
     plugins: [react()],
     base: './',
     build: {
-      outDir: '../php/dashboard',
+      outDir: '../php/public/app',
       emptyOutDir: true,
     },
     server: {

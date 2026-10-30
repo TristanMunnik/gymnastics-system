@@ -18,7 +18,7 @@ async function request(action, { csrfToken, headers, redirectOnUnauthorized = tr
 
   if (response.status === 401) {
     if (redirectOnUnauthorized) {
-      window.location.assign(import.meta.env.DEV ? '/' : '../index.php');
+      window.location.assign(import.meta.env.DEV ? '/' : './');
       throw new Error('Your session has expired. Sign in again.');
     }
     throw new Error(result.error || 'Invalid email or password.');

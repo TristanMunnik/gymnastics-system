@@ -34,17 +34,22 @@ frontend/
     main.jsx             Starts the React app
   vite.config.js         Vite development proxy and production build
 php/
-  api.php                PHP API used by the React dashboard
-  index.php              Sends old PHP links to the React app
-  admin.php              Sends old admin links to the React app
-  gymnast.php            Sends old member links to the React app
-  config*.php            Database configuration
-  functions.php           Reusable database operations
-  create-admin.php       One-time administrator setup
+  public/
+    api.php              The only HTTP entry point; routes requests to handlers
+    app/                 Production React build (generated, not committed)
+  src/
+    handlers/            auth.php and gymnasts.php: one function per endpoint
+    http.php             JSON responses, request body, CSRF check, session user
+    validation.php       Input validation for gymnast data
+    repository.php       SQL queries and transaction-safe database changes
+    db.php               PDO database connection
+  config/                config.php loader, config.example.php template
+scripts/
+  create-admin.php       One-time command-line administrator setup
 storage/                 Deletion log (created when needed)
 ```
 
-This is a small project structure, not a full enterprise framework. The folders separate the main parts of the app; you do not need to add more layers or move files around to keep working on it.
+Only `php/public/` is meant to be served by a web server; the code in `php/src/` and the settings in `php/config/` stay outside the public web root.
 
 ## How the code works
 
@@ -52,9 +57,9 @@ This is a small project structure, not a full enterprise framework. The folders 
 
 1. `frontend/src/main.jsx` starts the React application in the page's `root` element and loads its styles.
 2. `frontend/src/App.jsx` asks PHP for the current session. A signed-out visitor sees the React login form; an administrator sees the dashboard; a gymnast sees their member portal.
-3. `frontend/src/api.js` sends browser requests to `php/api.php`. During development, Vite forwards `/api.php` requests to the PHP server on port 8000.
-4. `php/api.php` checks the session, role, and CSRF token where needed. It is the only HTTP entry point that reads or changes app data.
-5. `php/db.php` opens a PDO connection using settings from the ignored `php/config.local.php`. `php/functions.php` contains the shared SQL operations for registering, listing, updating, and deleting gymnast records.
+3. `frontend/src/api.js` sends browser requests to `php/public/api.php`. During development, Vite forwards `/api.php` requests to the PHP server on port 8000.
+4. `php/public/api.php` routes the request to a handler in `php/src/handlers/`, which checks the session, role, and CSRF token where needed. It is the only HTTP entry point that reads or changes app data.
+5. `php/src/db.php` opens a PDO connection using settings from the ignored `php/config/config.local.php`. `php/src/repository.php` contains the shared SQL operations for registering, listing, updating, and deleting gymnast records.
 
 React controls what the user sees, but it does not grant permissions. PHP makes the permission checks before returning private data or changing the database.
 
@@ -71,12 +76,13 @@ React controls what the user sees, but it does not grant permissions. PHP makes 
 
 ### Main PHP files
 
-- `php/api.php` provides session, login/logout, gymnast-profile, and admin gymnast endpoints. It validates request data and checks the user's role on the server.
-- `php/config.php` loads local settings or environment variables. `php/config.local.php` contains your machine's database settings and must remain private.
-- `php/db.php` creates the PDO database connection.
-- `php/functions.php` contains reusable queries and transaction-safe database changes.
-- `php/create-admin.php` is a one-time command-line helper to create an administrator; it is not needed to add gymnast accounts.
-- `php/index.php`, `php/admin.php`, and `php/gymnast.php` are compatibility redirects for older links. The actual login and app screens are React.
+- `php/public/api.php` is the router: it starts the session, then sends each request to the matching handler.
+- `php/src/handlers/auth.php` handles session, login, and logout; `handlers/gymnasts.php` handles the profile and the admin member endpoints.
+- `php/src/validation.php` validates request data, and `php/src/http.php` holds the shared response, CSRF, and session helpers.
+- `php/src/repository.php` contains reusable queries and transaction-safe database changes.
+- `php/src/db.php` creates the PDO database connection.
+- `php/config/config.php` loads local settings or environment variables. `php/config/config.local.php` contains your machine's database settings and must remain private.
+- `scripts/create-admin.php` is a one-time command-line helper to create an administrator; it is not needed to add gymnast accounts.
 - `database/schema.sql` defines the MySQL tables and their relationships.
 
 ## Run locally on Windows with Laragon
@@ -100,10 +106,10 @@ If you already have a database with these tables and data, back it up first. The
 Open a PowerShell terminal in the project root and copy the example configuration:
 
 ```powershell
-Copy-Item php\config.example.php php\config.local.php
+Copy-Item php\config\config.example.php php\config\config.local.php
 ```
 
-Edit `php\config.local.php` to match the MySQL username and password in Laragon. A default local Laragon MySQL installation often uses `root` with a blank password; confirm your own settings rather than assuming. This local config file is ignored by Git. Do not commit database credentials.
+Edit `php\config\config.local.php` to match the MySQL username and password in Laragon. A default local Laragon MySQL installation often uses `root` with a blank password; confirm your own settings rather than assuming. This local config file is ignored by Git. Do not commit database credentials.
 
 ### 4. Create your first administrator (one time only)
 
@@ -115,7 +121,7 @@ $securePassword = Read-Host "Administrator password" -AsSecureString
 $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
 try {
     $env:GYMNAST_ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
-    & 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' php\create-admin.php
+    & 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' scripts\create-admin.php
     if ($LASTEXITCODE -ne 0) { throw "Administrator setup failed." }
 } finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
@@ -133,7 +139,7 @@ Start MySQL in Laragon. You do not need to start Apache. Open **two PowerShell t
 **Terminal 1 — start PHP:**
 ```powershell
 Set-Location 'C:\Projects\Portfolio-Projects\gymnastics'
-& 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' -S localhost:8000 -t php
+& 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' -S localhost:8000 -t php/public
 ```
 
 **Terminal 2 — start React:**
@@ -145,9 +151,9 @@ npm run dev
 
 Install frontend packages once, if you have not done so already, by running `npm install` in the `frontend` folder. Then open `http://localhost:5173` and sign in. Keep both terminal windows and Laragon's MySQL service running while you use the app; press Ctrl+C in each terminal to stop its server.
 
-### Optional: create an Apache production build
+### Optional: create a production build
 
-For local development, you do not need this step. If you want to build the React dashboard for Apache, run `npm run build` in `frontend`, set `frontend_url` to `dashboard/` in `php\config.local.php`, and open `http://localhost:8000/index.php`.
+For local development, you do not need this step. Run `npm run build` in `frontend`; it writes the React app to `php/public/app/`. With the PHP server running, open `http://localhost:8000/app/`.
 
 ## Existing database notes
 
@@ -171,7 +177,7 @@ The session endpoint is public so the React app can tell whether it should show 
 ## Security and deployment
 
 - Create local administrator credentials; no default account or password is included.
-- Keep `php/config.local.php` private and use a least-privilege MySQL account outside local development.
+- Keep `php/config/config.local.php` private and use a least-privilege MySQL account outside local development.
 - Serve the app over HTTPS in production and configure secure PHP session cookies.
 - The deletion audit log is written to `storage/deleted_records.log`; keep that directory outside public access and make it writable by PHP.
 - This is a learning/portfolio application. Review the code and add automated tests before using it with real personal data.

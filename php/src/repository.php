@@ -95,7 +95,7 @@ function deleteGymnast($pdo, $id) {
                 "Membership ID: " . $gymnast['membership_id'] . " | " .
                 "Program: " . $gymnast['training_program'] . "\n";
 
-    $logDirectory = __DIR__ . '/../storage';
+    $logDirectory = __DIR__ . '/../../storage';
     if (!is_dir($logDirectory) && !mkdir($logDirectory, 0755, true) && !is_dir($logDirectory)) {
         throw new RuntimeException('Could not create the audit log directory.');
     }

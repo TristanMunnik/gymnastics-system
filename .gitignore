@@ -1,8 +1,8 @@
 node_modules/
 frontend/node_modules/
 frontend/dist/
-php/dashboard/
-php/config.local.php
+php/public/app/
+php/config/config.local.php
 .env
 .env.*
 !.env.example

@@ -1,5 +1,6 @@
 <?php
 
+// Command-line only: pretend the page does not exist if someone requests it in a browser.
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;

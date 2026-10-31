@@ -1,5 +1,8 @@
 <?php
 
+// Gymnast endpoints. Each handler checks the CSRF token first when it changes data;
+// api.php has already confirmed the user's role before calling them.
+
 function handleProfile() {
     $gymnast = getGymnastByUserId(getPdo(), $_SESSION['user_id']);
     if (!$gymnast) {

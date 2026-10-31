@@ -16,6 +16,7 @@ async function request(action, { csrfToken, headers, redirectOnUnauthorized = tr
 
   const result = await response.json();
 
+  // 401 means the session expired. Login attempts are excluded so a wrong password shows an error instead.
   if (response.status === 401) {
     if (redirectOnUnauthorized) {
       window.location.assign(import.meta.env.DEV ? '/' : './');
@@ -31,6 +32,7 @@ async function request(action, { csrfToken, headers, redirectOnUnauthorized = tr
   return result;
 }
 
+// One small function per API endpoint; screens call these instead of using fetch directly.
 export function getSession() {
   return request('session');
 }

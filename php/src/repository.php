@@ -1,14 +1,18 @@
 <?php
 
+// Data access layer: every SQL query lives here, always as a prepared statement
+// (placeholders, never string-built SQL) so user input cannot inject SQL.
+
 define('STATUS_ACTIVE', 'Active');
 define('STATUS_ON_HOLD', 'On Hold');
 define('STATUS_COMPLETED', 'Completed');
 define('STATUS_PENDING', 'Pending');
 
-function registerGymnast($pdo, $data) {
+function registerGymnast(PDO $pdo, array $data) {
     $hashPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
-    // A member account and its profile are a single logical operation, so save both atomically.
+    // A member account and its profile are a single logical operation, so save both atomically:
+    // if either insert fails, the transaction rolls back and neither row is kept.
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare("INSERT INTO users (full_name, email, `password`, role) VALUES (?, ?, ?, ?)");
@@ -29,7 +33,8 @@ function registerGymnast($pdo, $data) {
     }
 }
 
-function getAllGymnasts($pdo) {
+function getAllGymnasts(PDO $pdo) {
+    // Name and email live in `users`, so join them onto each gymnast row. Newest first.
     $stmt = $pdo->query("
         SELECT gymnasts.*, users.full_name, users.email 
         FROM gymnasts 
@@ -39,7 +44,7 @@ function getAllGymnasts($pdo) {
     return $stmt->fetchAll();
 }
 
-function getGymnastById($pdo, $id) {
+function getGymnastById(PDO $pdo, int $id) {
     $stmt = $pdo->prepare("
         SELECT gymnasts.*, users.full_name, users.email 
         FROM gymnasts 
@@ -50,7 +55,7 @@ function getGymnastById($pdo, $id) {
     return $stmt->fetch();
 }
 
-function updateGymnast($pdo, $id, $data) {
+function updateGymnast(PDO $pdo, int $id, array $data) {
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare("
@@ -84,12 +89,13 @@ function updateGymnast($pdo, $id, $data) {
     }
 }
 
-function deleteGymnast($pdo, $id) {
+function deleteGymnast(PDO $pdo, int $id) {
     $gymnast = getGymnastById($pdo, $id);
     if (!$gymnast) {
         return false;
     }
 
+    // Write the audit log first: if logging fails, nothing is deleted.
     $logEntry = date('Y-m-d H:i:s') . " | DELETED | " .
                 "Name: " . $gymnast['full_name'] . " | " .
                 "Membership ID: " . $gymnast['membership_id'] . " | " .
@@ -105,6 +111,7 @@ function deleteGymnast($pdo, $id) {
         throw new RuntimeException('Could not write the deletion audit log.');
     }
 
+    // Deleting the user also removes the gymnast row (ON DELETE CASCADE in schema.sql).
     $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = (SELECT user_id FROM gymnasts WHERE id = ?)");
@@ -120,7 +127,8 @@ function deleteGymnast($pdo, $id) {
     return true;
 }
 
-function getGymnastByUserId($pdo, $userId) {
+// Used by the member portal: find the profile that belongs to the signed-in user.
+function getGymnastByUserId(PDO $pdo, int $userId) {
     $stmt = $pdo->prepare("
         SELECT gymnasts.*, users.full_name, users.email 
         FROM gymnasts 

@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
     },
     server: {
+      // In development, forward /api.php to the PHP server so the browser sees one origin
+      // (the session cookie works and no CORS setup is needed).
       proxy: {
         '/api.php': {
           target: phpAppUrl.origin,

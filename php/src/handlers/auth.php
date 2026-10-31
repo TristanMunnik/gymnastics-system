@@ -19,6 +19,7 @@ function handleLogin() {
     $account = $statement->fetch();
 
     if (!$account || !password_verify($password, $account['password'])) {
+        // One vague message for both cases, so attackers cannot tell which emails exist.
         respond(['error' => 'Invalid email or password.'], 401);
     }
     if (!in_array($account['role'], ['admin', 'gymnast'], true)) {

@@ -4,6 +4,8 @@ CREATE DATABASE IF NOT EXISTS gymnastics_db
 
 USE gymnastics_db;
 
+-- Every person who can sign in. `role` is 'admin' or 'gymnast'.
+-- `password` holds a hash (never plain text), so it needs room for 255 characters.
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     full_name VARCHAR(120) NOT NULL,
@@ -14,6 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE KEY users_email_unique (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Membership details for users with the 'gymnast' role (one row per user).
+-- UNIQUE keys stop duplicate membership IDs; deleting a user cascades to their gymnast row.
 CREATE TABLE IF NOT EXISTS gymnasts (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT UNSIGNED NOT NULL,

@@ -36,6 +36,7 @@ try {
         respond(['error' => 'Please sign in to continue.'], 401);
     }
 
+    // Everything below needs a signed-in user.
     if ($method === 'GET' && $action === 'profile' && $_SESSION['role'] === 'gymnast') {
         handleProfile();
     }
@@ -44,6 +45,7 @@ try {
         respond(['error' => 'Administrator access is required.'], 403);
     }
 
+    // Admin-only member management. The HTTP method picks the action (REST style).
     if ($action === 'gymnasts') {
         switch ($method) {
             case 'GET':

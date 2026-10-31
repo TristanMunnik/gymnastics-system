@@ -4,6 +4,7 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import GymnastPortal from './pages/GymnastPortal.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 
+// Root component: holds the signed-in user and CSRF token, then shows the right screen for their role.
 export default function App() {
   const [user, setUser] = useState(null);
   const [csrfToken, setCsrfToken] = useState('');
@@ -31,6 +32,7 @@ export default function App() {
   async function handleLogout() {
     try {
       await logout(csrfToken);
+      // The old CSRF token died with the session, so fetch a fresh one for the next login.
       const session = await getSession();
       setUser(null);
       setCsrfToken(session.csrfToken);

@@ -3,6 +3,7 @@ import { useState } from 'react';
 const programs = ['Beginner', 'Intermediate', 'Advanced'];
 const statuses = ['Active', 'On Hold', 'Completed', 'Pending'];
 
+// Starting values for a new member; editing overlays the chosen gymnast's data on top.
 const emptyForm = {
   full_name: '',
   email: '',
@@ -15,6 +16,8 @@ const emptyForm = {
 };
 
 export default function GymnastForm({ gymnast, onClose, onSave, saving }) {
+  // The function form of useState runs once, on first render. The password is always blank:
+  // the API never returns it, and edits do not change it.
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     ...(gymnast || {}),
@@ -22,6 +25,7 @@ export default function GymnastForm({ gymnast, onClose, onSave, saving }) {
   }));
   const [error, setError] = useState('');
 
+  // One handler for every input: the input's name attribute matches its key in `form`.
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
@@ -40,6 +44,7 @@ export default function GymnastForm({ gymnast, onClose, onSave, saving }) {
     <div
       className="modal-backdrop"
       role="presentation"
+      // Clicking the dark backdrop closes the form, but clicks inside the dialog do not.
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

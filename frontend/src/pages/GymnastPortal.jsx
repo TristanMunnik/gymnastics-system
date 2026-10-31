@@ -13,6 +13,7 @@ const profileFields = [
   ['Status', 'status'],
 ];
 
+// Renders [label, key] pairs as rows, so the profile, report, and slip share one layout.
 function ProfileRows({ gymnast, fields }) {
   return fields.map(([label, key]) => (
     <div className="profile-row" key={key}>
@@ -26,6 +27,7 @@ export default function GymnastPortal({ user, onLogout }) {
   const [gymnast, setGymnast] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  // The ?page= value picks the view (profile, report, or slip). A router library is not needed for three views.
   const page = new URLSearchParams(window.location.search).get('page') || 'profile';
 
   useEffect(() => {

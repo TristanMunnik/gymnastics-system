@@ -1,6 +1,10 @@
 <?php
 
-function requiredText($data, $key, $label, $maximumLength, &$errors) {
+// Server-side validation. The React form checks input too, but the browser can be bypassed,
+// so PHP never trusts it.
+
+// Trims the field, records an error if it is empty or too long, and returns the cleaned value.
+function requiredText(array $data, string $key, string $label, int $maximumLength, array &$errors) {
     $value = trim((string) ($data[$key] ?? ''));
     $length = function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
     if ($value === '') {
@@ -11,12 +15,16 @@ function requiredText($data, $key, $label, $maximumLength, &$errors) {
     return $value;
 }
 
-function validDate($value) {
+// The '!' resets unspecified fields; comparing the formatted date back to the input
+// rejects impossible dates such as 2025-02-31.
+function validDate(string $value) {
     $date = DateTime::createFromFormat('!Y-m-d', $value);
     return $date && $date->format('Y-m-d') === $value;
 }
 
-function validateGymnast($data, $creating) {
+// Returns [cleaned values, list of error messages]. New members need a password;
+// edits need a status instead.
+function validateGymnast(array $data, bool $creating) {
     $errors = [];
     $result = [
         'full_name' => requiredText($data, 'full_name', 'Full name', 120, $errors),

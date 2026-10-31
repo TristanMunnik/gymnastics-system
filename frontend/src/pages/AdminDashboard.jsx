@@ -48,9 +48,11 @@ export default function AdminDashboard({ user, csrfToken, onLogout }) {
     setError('');
     try {
       if (selected) {
+        // Edits never change the password, so do not send it.
         const data = { ...form };
         delete data.password;
         const updated = await updateGymnast(selected.id, data, csrfToken);
+        // Update the list in place so the table refreshes without another request.
         setGymnasts((current) => current.map((item) => item.id === updated.id ? updated : item));
         setNotice('Gymnast details have been updated.');
       } else {
@@ -191,6 +193,7 @@ export default function AdminDashboard({ user, csrfToken, onLogout }) {
       </main>
       {formOpen && (
         <GymnastForm
+          // A new key remounts the form, so its fields reset when switching between members.
           key={selected?.id || 'new'}
           gymnast={selected}
           onClose={() => { setFormOpen(false); setSelected(null); }}

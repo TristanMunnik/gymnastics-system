@@ -10,6 +10,30 @@ A university assignment rebuilt as a portfolio-ready membership management app. 
 - Password hashing, prepared SQL statements, input validation, role checks, and CSRF protection for dashboard changes
 - Responsive React interface with a Vite development server and production build
 
+## Screenshots
+
+**Sign in**
+
+![Sign-in page](docs/screenshots/Login.png)
+
+**Administrator dashboard**
+
+![Administrator dashboard listing gymnasts with search and filters](docs/screenshots/GymnastAdminDashboard.png)
+
+**Register a gymnast**
+
+![Form for registering a new gymnast](docs/screenshots/RegisterGymnast.png)
+
+**Member portal**
+
+![Member profile page](docs/screenshots/GymnastDashboard.png)
+
+**Profile report and enrollment slip**
+
+![Printable profile summary report](docs/screenshots/ProfileReport.png)
+
+![Printable enrollment confirmation slip](docs/screenshots/Enrollment.png)
+
 ## Stack
 
 - React 18 and Vite

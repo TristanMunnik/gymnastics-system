@@ -1,62 +1,76 @@
 # Gymnastics Academy
 
-A university assignment rebuilt as a portfolio-ready membership management app. React renders the login, administrator dashboard, and gymnast portal; PHP handles authentication and JSON requests; MySQL stores users and gymnast memberships.
+A full-stack membership management app for a gymnastics academy. Administrators register and manage gymnasts; members sign in to view their own profile and print a profile report or enrollment slip.
 
-## Features
-
-- Administrator sign-in and role-protected dashboard
-- Create, view, search, filter, edit, and delete gymnast records
-- Gymnast sign-in, profile, printable profile report, and enrollment slip
-- Password hashing, prepared SQL statements, input validation, role checks, and CSRF protection for dashboard changes
-- Responsive React interface with a Vite development server and production build
-
-## Screenshots
-
-**Sign in**
-
-![Sign-in page](docs/screenshots/login.png)
-
-**Administrator dashboard**
+It has a React frontend, a PHP JSON API, and a MySQL database, with a focus on secure sign-in, server-side validation, and a clean separation between the three layers.
 
 ![Administrator dashboard listing gymnasts with search and filters](docs/screenshots/admin-dashboard.png)
 
-**Register a gymnast**
+## Features
 
-![Form for registering a new gymnast](docs/screenshots/register-form.png)
+- **Administrators:** sign in, then create, view, search, filter, edit, and delete gymnast records from a dashboard with membership summary cards
+- **Members:** sign in to see their own profile, a printable profile report, and an enrollment confirmation slip
+- **Security:** hashed passwords, prepared SQL statements, server-side validation, role checks on every request, CSRF protection, and HttpOnly/SameSite session cookies
+- **Data integrity:** a member's account and profile are saved in one database transaction, and every deletion is written to an audit log
+- **Responsive interface** built with React and Vite
 
-**Member portal**
+## Tech stack
 
-![Member profile page](docs/screenshots/member-profile.png)
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 18, Vite |
+| Backend | PHP 8+ (PDO), no framework |
+| Database | MySQL or MariaDB |
 
-**Profile report and enrollment slip**
+Node.js is only needed to run and build the frontend. The backend is PHP, with no separate Node API.
 
-![Printable profile summary report](docs/screenshots/profile-report.png)
+## Screenshots
 
-![Printable enrollment confirmation slip](docs/screenshots/enrollment-slip.png)
+| Sign in | Register a gymnast |
+| --- | --- |
+| ![Sign-in page](docs/screenshots/login.png) | ![Form for registering a new gymnast](docs/screenshots/register-form.png) |
 
-## Stack
+| Member profile | Profile report |
+| --- | --- |
+| ![Member profile page](docs/screenshots/member-profile.png) | ![Printable profile summary report](docs/screenshots/profile-report.png) |
 
-- React 18 and Vite
-- PHP 8+ with PDO MySQL
-- MySQL or MariaDB
-- Node.js 20+ for the frontend development/build tools
+| Enrollment slip |
+| --- |
+| ![Printable enrollment confirmation slip](docs/screenshots/enrollment-slip.png) |
 
-Node.js is used only to build and serve the React frontend during development. The app backend is PHP; there is no separate Node API.
+## How it works
+
+1. `frontend/src/main.jsx` mounts the React app. `App.jsx` asks the API who is signed in, then shows the login page, the admin dashboard, or the member portal.
+2. `frontend/src/api.js` is the only place that talks to the server. It sends the session cookie and a CSRF token with every change. In development, Vite proxies `/api.php` to the PHP server.
+3. `php/public/api.php` is the single entry point. It starts the session, checks the user's role, and routes the request to a handler in `php/src/handlers/`.
+4. Handlers validate input (`validation.php`) and run SQL through `repository.php`, which connects with `db.php`.
+
+React decides what the user sees, but PHP decides what the user is allowed to do. Every permission check happens on the server.
+
+### Design decisions
+
+- **Separate API and frontend.** PHP exposes a small JSON API, so the interface and the data layer can change independently.
+- **Only `php/public/` is web-facing.** Application code (`php/src/`) and configuration (`php/config/`) sit outside the public folder.
+- **Prepared statements everywhere.** User input is never concatenated into SQL.
+- **Transactions for multi-step changes.** Registering, updating, and deleting a member touch two tables, so either every step succeeds or none is saved.
+- **One generic login error.** "Invalid email or password" is returned for both an unknown email and a wrong password, so attackers cannot discover which emails exist.
+- **No default credentials.** The first administrator is created with a command-line script, and database settings come from a private local file or environment variables.
 
 ## Project layout
 
 ```text
 database/
   schema.sql             Database tables and constraints
+docs/screenshots/        Images used in this README
 frontend/
   src/
     components/          Reusable form and status badge
-    pages/               Login, admin dashboard, and gymnast portal
+    pages/               Login, admin dashboard, and member portal
     css/                 Login, dashboard, and portal styles
     App.jsx              Restores the session and chooses the screen
     api.js               Sends requests to the PHP API
     main.jsx             Starts the React app
-  vite.config.js         Vite development proxy and production build
+  vite.config.js         Dev proxy and production build settings
 php/
   public/
     api.php              The only HTTP entry point; routes requests to handlers
@@ -65,79 +79,39 @@ php/
     handlers/            auth.php and gymnasts.php: one function per endpoint
     http.php             JSON responses, request body, CSRF check, session user
     validation.php       Input validation for gymnast data
-    repository.php       SQL queries and transaction-safe database changes
+    repository.php       SQL queries and transactions
     db.php               PDO database connection
-  config/                config.php loader, config.example.php template
+  config/                config.php loader and config.example.php template
 scripts/
   create-admin.php       One-time command-line administrator setup
-storage/                 Deletion log (created when needed)
+storage/                 Deletion audit log (created when needed)
 ```
 
-Only `php/public/` is meant to be served by a web server; the code in `php/src/` and the settings in `php/config/` stay outside the public web root.
+## Run it locally (Windows with Laragon)
 
-## How the code works
-
-### What happens when you sign in
-
-1. `frontend/src/main.jsx` starts the React application in the page's `root` element and loads its styles.
-2. `frontend/src/App.jsx` asks PHP for the current session. A signed-out visitor sees the React login form; an administrator sees the dashboard; a gymnast sees their member portal.
-3. `frontend/src/api.js` sends browser requests to `php/public/api.php`. During development, Vite forwards `/api.php` requests to the PHP server on port 8000.
-4. `php/public/api.php` routes the request to a handler in `php/src/handlers/`, which checks the session, role, and CSRF token where needed. It is the only HTTP entry point that reads or changes app data.
-5. `php/src/db.php` opens a PDO connection using settings from the ignored `php/config/config.local.php`. `php/src/repository.php` contains the shared SQL operations for registering, listing, updating, and deleting gymnast records.
-
-React controls what the user sees, but it does not grant permissions. PHP makes the permission checks before returning private data or changing the database.
-
-### Main React files
-
-- `frontend/src/App.jsx` checks the signed-in user and chooses the login page, admin dashboard, or gymnast portal.
-- `frontend/src/pages/LoginPage.jsx` contains the sign-in form. `AdminDashboard.jsx` handles membership management, and `GymnastPortal.jsx` shows member profiles and printable reports.
-- `frontend/src/components/GymnastForm.jsx` is the shared create/edit form, and `StatusBadge.jsx` displays a membership status.
-- React state (`useState`) holds data and form values; `useEffect` loads data from PHP; `useMemo` recalculates the filtered list when its inputs change.
-- `frontend/src/api.js` is the small HTTP client used by the screens. It sends the PHP session cookie and the CSRF header for changes.
-- `frontend/src/main.jsx` is the browser entry point that mounts React and imports the stylesheets.
-- `frontend/src/css/app.css` styles the dashboard and member portal; `frontend/src/css/login.css` styles the login screen.
-- `frontend/vite.config.js` configures the local React development server and builds the production files.
-
-### Main PHP files
-
-- `php/public/api.php` is the router: it starts the session, then sends each request to the matching handler.
-- `php/src/handlers/auth.php` handles session, login, and logout; `handlers/gymnasts.php` handles the profile and the admin member endpoints.
-- `php/src/validation.php` validates request data, and `php/src/http.php` holds the shared response, CSRF, and session helpers.
-- `php/src/repository.php` contains reusable queries and transaction-safe database changes.
-- `php/src/db.php` creates the PDO database connection.
-- `php/config/config.php` loads local settings or environment variables. `php/config/config.local.php` contains your machine's database settings and must remain private.
-- `scripts/create-admin.php` is a one-time command-line helper to create an administrator; it is not needed to add gymnast accounts.
-- `database/schema.sql` defines the MySQL tables and their relationships.
-
-## Run locally on Windows with Laragon
-
-Laragon provides MySQL and PHP; PHP's built-in development server serves the app, so the project does not need to be moved into Laragon's `www` folder and Apache is not required to run it.
+Laragon provides PHP, MySQL, and Node.js. PHP's built-in server runs the app, so you do not need Apache or to move the project into Laragon's `www` folder.
 
 ### 1. Install Laragon
 
-Download the **Full** Windows installer from the [official Laragon download page](https://laragon.org/download/). Install it to the default `C:\laragon` folder (or note the folder you choose). Open Laragon and choose **Start All** to start its services.
+Download the **Full** installer from the [Laragon download page](https://laragon.org/download/) and install it to the default `C:\laragon` folder. Open Laragon and choose **Start All**.
 
-Laragon's full package includes PHP, MySQL, and Node.js. To use its PHP and Node.js commands in PowerShell, select **Tools > Path > Add Laragon to Path**, then open a new terminal. If Node.js is already installed, you can use that instead.
+To use PHP and Node.js from PowerShell, select **Tools > Path > Add Laragon to Path**, then open a new terminal. If Node.js is already installed, you can use that instead.
 
 ### 2. Create the database
 
-In Laragon, select **Menu > MySQL > phpMyAdmin**. Import `database/schema.sql`; this creates `gymnastics_db` and the `users` and `gymnasts` tables.
+In Laragon, select **Menu > MySQL > phpMyAdmin** and import `database/schema.sql`. This creates the `gymnastics_db` database with its `users` and `gymnasts` tables.
 
-If you already have a database with these tables and data, back it up first. The schema uses `CREATE TABLE IF NOT EXISTS` and will not modify existing tables.
+### 3. Configure the database connection
 
-### 3. Configure the database
-
-Open a PowerShell terminal in the project root and copy the example configuration:
+From the project root, copy the example file and edit it with your MySQL username and password:
 
 ```powershell
 Copy-Item php\config\config.example.php php\config\config.local.php
 ```
 
-Edit `php\config\config.local.php` to match the MySQL username and password in Laragon. A default local Laragon MySQL installation often uses `root` with a blank password; confirm your own settings rather than assuming. This local config file is ignored by Git. Do not commit database credentials.
+A default Laragon install often uses `root` with a blank password; confirm your own settings. `config.local.php` is ignored by Git, so your credentials are never committed.
 
-### 4. Create your first administrator (one time only)
-
-You only do this once to create the admin account. From PowerShell in the project root, enter:
+### 4. Create the first administrator (one time only)
 
 ```powershell
 $env:GYMNAST_ADMIN_EMAIL = Read-Host "Administrator email"
@@ -145,7 +119,7 @@ $securePassword = Read-Host "Administrator password" -AsSecureString
 $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
 try {
     $env:GYMNAST_ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
-    & 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' scripts\create-admin.php
+    php scripts\create-admin.php
     if ($LASTEXITCODE -ne 0) { throw "Administrator setup failed." }
 } finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
@@ -154,54 +128,56 @@ try {
 }
 ```
 
-The script uses Laragon's PHP and hashes the password before saving it. The minimum is 6 characters for this local assignment; a longer password is safer. After this one-time setup, create gymnast accounts from **Register gymnast** in the dashboard—no terminal command is needed for each member.
+The password must be at least 8 characters and is hashed before it is saved. If `php` is not recognized, run Laragon's PHP by its full path instead, for example `C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe` (your version folder may differ). Gymnast accounts are created from **Register gymnast** in the dashboard; no terminal command is needed for them.
 
 ### 5. Start the app
 
-Start MySQL in Laragon. You do not need to start Apache. Open **two PowerShell terminals** in the project folder:
+Make sure MySQL is running in Laragon, then open two terminals in the project folder.
 
-**Terminal 1 — start PHP:**
+**Terminal 1: PHP API**
+
 ```powershell
-Set-Location 'C:\Projects\Portfolio-Projects\gymnastics'
-& 'C:\laragon\bin\php\php-8.3.36-Win32-vs16-x64\php.exe' -S localhost:8000 -t php/public
+php -S localhost:8000 -t php/public
 ```
 
-**Terminal 2 — start React:**
+**Terminal 2: React frontend**
 
 ```powershell
-Set-Location 'C:\Projects\Portfolio-Projects\gymnastics\frontend'
+cd frontend
+npm install   # first time only
 npm run dev
 ```
 
-Install frontend packages once, if you have not done so already, by running `npm install` in the `frontend` folder. Then open `http://localhost:5173` and sign in. Keep both terminal windows and Laragon's MySQL service running while you use the app; press Ctrl+C in each terminal to stop its server.
+Open <http://localhost:5173> and sign in. Press Ctrl+C in each terminal to stop.
 
-### Optional: create a production build
+### Optional: production build
 
-For local development, you do not need this step. Run `npm run build` in `frontend`; it writes the React app to `php/public/app/`. With the PHP server running, open `http://localhost:8000/app/`.
-
-## Existing database notes
-
-The supplied schema reflects the tables and fields used by the application code: `users` (`id`, `full_name`, `email`, `password`, `role`) and `gymnasts` (`id`, `user_id`, `membership_id`, `contact_no`, `date_of_birth`, `training_program`, `enrollment_date`, `status`). If your assignment database differs, back it up and compare its columns and constraints before importing or migrating.
+Run `npm run build` in `frontend`. It writes the app to `php/public/app/`, and with the PHP server running you can open <http://localhost:8000/app/>.
 
 ## API overview
 
-The session endpoint is public so the React app can tell whether it should show the login screen. Profile requests require the signed-in gymnast; member-management requests require an administrator. Login, logout, and data-changing requests require the CSRF token returned by `GET api.php?action=session`.
+The session endpoint is public so the React app can tell whether to show the login screen. Profile requests need a signed-in gymnast, and member management needs an administrator. Login, logout, and every data-changing request require the CSRF token returned by `GET api.php?action=session`.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `api.php?action=session` | Current signed-in user (if any) and CSRF token |
-| `POST` | `api.php?action=login` | Sign in |
-| `POST` | `api.php?action=logout` | Sign out |
-| `GET` | `api.php?action=profile` | Get the signed-in gymnast's own profile |
-| `GET` | `api.php?action=gymnasts` | Admin: list members |
-| `POST` | `api.php?action=gymnasts` | Admin: register a member |
-| `PUT` | `api.php?action=gymnasts&id=<id>` | Admin: update a member |
-| `DELETE` | `api.php?action=gymnasts&id=<id>` | Admin: delete a member |
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `api.php?action=session` | Public | Current user (if any) and CSRF token |
+| `POST` | `api.php?action=login` | Public | Sign in |
+| `POST` | `api.php?action=logout` | Signed in | Sign out |
+| `GET` | `api.php?action=profile` | Gymnast | Own profile |
+| `GET` | `api.php?action=gymnasts` | Admin | List members |
+| `POST` | `api.php?action=gymnasts` | Admin | Register a member |
+| `PUT` | `api.php?action=gymnasts&id=<id>` | Admin | Update a member |
+| `DELETE` | `api.php?action=gymnasts&id=<id>` | Admin | Delete a member |
 
-## Security and deployment
+## Security notes for deployment
 
-- Create local administrator credentials; no default account or password is included.
 - Keep `php/config/config.local.php` private and use a least-privilege MySQL account outside local development.
-- Serve the app over HTTPS in production and configure secure PHP session cookies.
-- The deletion audit log is written to `storage/deleted_records.log`; keep that directory outside public access and make it writable by PHP.
-- This is a learning/portfolio application. Review the code and add automated tests before using it with real personal data.
+- Serve the app over HTTPS and set the session cookie `secure` flag in production.
+- The deletion audit log is written to `storage/deleted_records.log`, outside the public folder. Make sure PHP can write to it.
+
+## Limitations and next steps
+
+- Add automated tests, starting with the validation functions
+- Add continuous integration to build the frontend and lint the PHP on every push
+- Add pagination for large member lists
+- Deploy a live demo

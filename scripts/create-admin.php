@@ -20,8 +20,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     fwrite(STDERR, "Enter a valid email address.\n");
     exit(1);
 }
-if (strlen($password) < 6) {
-    fwrite(STDERR, "Use an administrator password of at least 6 characters.\n");
+if (strlen($password) < 8) {
+    fwrite(STDERR, "Use an administrator password of at least 8 characters.\n");
     exit(1);
 }
 

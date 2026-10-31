@@ -2,6 +2,9 @@
 
 // The only HTTP entry point. It routes each request to a handler in src/handlers/;
 // authentication, role checks, and database access all stay server-side.
+
+// HttpOnly hides the session cookie from JavaScript; SameSite=Lax stops it being sent with cross-site requests.
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');

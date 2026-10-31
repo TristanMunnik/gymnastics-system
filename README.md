@@ -14,25 +14,25 @@ A university assignment rebuilt as a portfolio-ready membership management app. 
 
 **Sign in**
 
-![Sign-in page](docs/screenshots/Login.png)
+![Sign-in page](docs/screenshots/login.png)
 
 **Administrator dashboard**
 
-![Administrator dashboard listing gymnasts with search and filters](docs/screenshots/GymnastAdminDashboard.png)
+![Administrator dashboard listing gymnasts with search and filters](docs/screenshots/admin-dashboard.png)
 
 **Register a gymnast**
 
-![Form for registering a new gymnast](docs/screenshots/RegisterGymnast.png)
+![Form for registering a new gymnast](docs/screenshots/register-form.png)
 
 **Member portal**
 
-![Member profile page](docs/screenshots/GymnastDashboard.png)
+![Member profile page](docs/screenshots/member-profile.png)
 
 **Profile report and enrollment slip**
 
-![Printable profile summary report](docs/screenshots/ProfileReport.png)
+![Printable profile summary report](docs/screenshots/profile-report.png)
 
-![Printable enrollment confirmation slip](docs/screenshots/Enrollment.png)
+![Printable enrollment confirmation slip](docs/screenshots/enrollment-slip.png)
 
 ## Stack
 
